@@ -18,11 +18,12 @@ workflows:
     max_build_duration: 120
     instance_type: mac_mini_m1
 
-    dependencies:
-      - sample-workflow # Reference the previous workflow
+    depends_on:
+      - sample-workflow # Specify the dependency on the previous workflow
 
     scripts:
       - name: Download Artifacts
         script: |
           # Download the artifact from the previous workflow
           curl -O $CM_ARTIFACT_PATH
+
