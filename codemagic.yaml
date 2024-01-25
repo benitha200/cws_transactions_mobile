@@ -1,29 +1,38 @@
+# Specify Xcode version
+xcode: latest
+
+# Define workflows
 workflows:
-  sample-workflow:
-    name: Codemagic Sample Workflow
-    max_build_duration: 120
-    instance_type: mac_mini_m1
-
-    scripts:
-      - name: Build
-        script: |
-          # Your build commands here
-          flutter build ios --release
-
+  ios-build:
+    name: iOS Build
+    instance_type: mac_pro
+    # Generate IPA artifact
     artifacts:
-      - build/ios/Runner.app # Define the path to the artifact you want to save
+      - build/ios/ipa/*.ipa
+      - /tmp/xcodebuild_logs/*.log
+    scripts:
+      - name: Set up keychain to sign iOS app
+        script: |
+          # Add certificate and provisioning profile from Codemagic UI
+          keychain initialize
+      - name: Install dependencies
+        script: |
+          flutter pub get
+      - name: Build IPA for distribution
+        script: |
+          flutter build ios --release --build-name=1.0.0 --build-number=$CM_BUILD_NUMBER
+          cd build/ios/ipa
+          zip -r app.ipa Payload
+      - name: Export $CM_ARTIFACT_PATH
+        script: |
+          echo "The artifact path is $CM_ARTIFACT_PATH"
 
   download-artifacts:
     name: Download Artifacts
-    max_build_duration: 120
-    instance_type: mac_mini_m1
-
+    instance_type: mac_mini
     depends_on:
-      - sample-workflow # Specify the dependency on the previous workflow
-
+      - ios-build
     scripts:
-      - name: Download Artifacts
+      - name: Download artifact
         script: |
-          # Download the artifact from the previous workflow
-          curl -O $CM_ARTIFACT_PATH
-
+          curl -o output.zip $CM_ARTIFACT_PATH
